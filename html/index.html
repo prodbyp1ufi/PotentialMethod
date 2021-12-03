@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transport</title>
+    <link href="../css/index.css" rel="stylesheet">
+</head>
+<body>
+    <div class="App">
+        <div class="enter-data">
+            <div class="about-container">
+                <h2>Метод потенциалов</h2>
+                <a class="about" href="./help.html">Справка &#8614;</a>
+            </div>
+            <p>Размеры транспортной таблицы</p>
+            <div class="input-container">
+                <input id="row"  min="2" value="2" oninput="validity.valid||(value='');" type="number"/>
+                X
+                <input id="col" min="2" type="number" oninput="validity.valid||(value='');" value="2"/>
+            </div>
+            <input type="button" onclick="generateTable()"  value="Посторить таблицу"/>
+            <p>или</p>
+            <input onchange="takeFile(this.files)" accept=".txt, .xlsx*" type="file"/>
+        </div>
+        </div>
+    <script src="../js/index.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.8.0/jszip.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.8.0/xlsx.js"></script>
+    <script>
+        var ExcelToJSON = function() {
+            this.parseExcel = function(file) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    var data = e.target.result;
+                    var workbook = XLSX.read(data, {
+                        type: 'binary'
+                    });
+                    workbook.SheetNames.forEach(function(sheetName) {
+                        var XL_row_object = XLSX.utils.sheet_to_csv(workbook.Sheets[sheetName]);
+                        var txt = JSON.stringify(XL_row_object);
+                        txt = txt.replace('\"','')
+                        txt = txt.replace(',\\n\"','')
+                        lines = txt.split('\\n')
+                        matrix = []
+                        matrixA = []
+                        matrixB = []
+                        for (let i = 0; i < lines.length; i++) {
+                            if(i !== lines.length -1){
+                                matrix.push([])
+                                columns = lines[i].split(',')
+                                for (let j = 0; j < columns.length; j++) {
+                                    if(columns.length -1 !== j){
+                                        matrix[i].push(parseInt(columns[j]))
+                                    }
+                                    else{
+                                        matrixA.push(parseInt(columns[j]))
+                                    }
+                                }
+                            }
+                            else{
+                                columns = lines[i].split(',')
+                                for (let j = 0; j < columns.length; j++) {
+                                    matrixB.push(parseInt(columns[j]))
+                                }
+                            }
+                        }
+                        var mainDiv = document.getElementsByClassName('enter-data')
+                        var newDiv = document.createElement('div')
+                        newDiv.className = 'table'
+                        var tableTitle = document.createTextNode('Транспортная таблица')
+                        newDiv.appendChild(tableTitle)
+                        var row = document.getElementById('row')
+                        var col = document.getElementById('col')
+                        row.disabled = true
+                        col.disabled = true
+                        row.value = matrix.length
+                        col.value = matrix[0].length
+                        row = matrix.length
+                        col = matrix[0].length
+                        
+                        for (let i = 0; i < row; i++) {
+                            var newRow = document.createElement('div')
+                            newRow.className = 'row'
+                            for (let j = 0; j < col; j++) {
+                                var newCol = document.createElement('input')
+                                newCol.className = 'col'
+                                newCol.type = 'number'
+                                newCol.min = '0'
+                                newCol.value = matrix[i][j]
+                                newRow.appendChild(newCol)
+                            }
+                            newDiv.appendChild(newRow)
+                        }
+                        
+                        var matrixATitle = document.createTextNode('Поставщики')
+                        newDiv.appendChild(matrixATitle)
+                        var matrixADiv = document.createElement('div')
+                        matrixADiv.className = 'matrix-a'
+                        var newRow = document.createElement('div')
+                        newRow.className = 'row'
+                        for (let i = 0; i < row; i++) {
+                            var newCol = document.createElement('input')
+                            newCol.className = 'col'
+                            newCol.type = 'number'
+                            newCol.min = '0'
+                            newCol.value = matrixA[i]
+                            newRow.appendChild(newCol)
+                        }
+                        matrixADiv.appendChild(newRow)
+                        newDiv.appendChild(matrixADiv)
+
+                        var matrixBTitle = document.createTextNode('Потребители')
+                        newDiv.appendChild(matrixBTitle)
+                        var matrixBDiv = document.createElement('div')
+                        matrixBDiv.className = 'matrix-b'
+                        var newRow = document.createElement('div')
+                        newRow.className = 'row'
+                        for (let i = 0; i < col; i++) {
+                            var newCol = document.createElement('input')
+                            newCol.className = 'col'
+                            newCol.type = 'number'
+                            newCol.min = '0'
+                            newCol.value = matrixB[i]
+                            newRow.appendChild(newCol)
+                        }
+                        matrixBDiv.appendChild(newRow)
+                        newDiv.appendChild(matrixBDiv)
+
+                        var delayDiv = document.createElement('div')
+                        delayDiv.className = '.delay-button-line'
+                        for (let i = 0; i < 2; i++) {
+                            var button = document.createElement('input')
+                            button.type = 'button'
+                            if(i === 0){
+                                button.value = 'Очистить'
+                                button.onclick = () => {
+                                    var cells = document.getElementsByClassName('col')
+                                    for (let i = 0; i < cells.length; i++) {
+                                        cells[i].value = '0'
+                                    }
+                                }
+                            }
+                            else{
+                                button.value = 'Рассчитать'
+                                button.onclick = ()=>{
+                                    var matrix = []
+                                    var table = document.getElementsByClassName('table')
+                                    table = table[0]
+                                    var row = document.getElementById('row')
+                                    var col = document.getElementById('col')
+                                    row = row.value
+                                    col = col.value
+
+                                    for (let i = 0; i < row; i++) {
+                                        var rows = table.children[i]
+                                        matrix.push([])
+                                        for (let j = 0; j < col; j++) {
+                                            matrix[i].push(parseInt(rows.children[j].value))
+                                        }
+                                        
+                                    }
+                                    var matrixA = []
+                                    var matrixADiv = document.getElementsByClassName('matrix-a')
+                                    matrixADiv = matrixADiv[0].children[0]
+                                    for (let i = 0; i < matrixADiv.children.length; i++) {
+                                        matrixA.push(parseInt(matrixADiv.children[i].value))
+                                        
+                                    }
+                                    var matrixB = []
+                                    var matrixBDiv = document.getElementsByClassName('matrix-b')
+                                    matrixBDiv = matrixBDiv[0].children[0]
+                                    for (let i = 0; i < matrixBDiv.children.length; i++) {
+                                        matrixB.push(parseInt(matrixBDiv.children[i].value))
+                                    }
+                                    res = StartMehthod(matrix,matrixA,matrixB,0)
+                                    var mainDiv = document.getElementsByClassName('enter-data')
+                                    var p = document.createElement('p')
+                                    p.id = 'answer'
+                                    p.innerText = res
+                                    mainDiv[0].appendChild(p)
+                                    let saveLink = document.createElement('a')
+                                    saveLink.innerText = 'Сохранить решение'
+                                    var file = new Blob([res], {type: 'text/plain;charset=utf-8'});
+                                    saveLink.href = URL.createObjectURL(file);
+                                    saveLink.download = 'answer.txt'
+                                    mainDiv[0].appendChild(saveLink)
+                                }
+                            }
+                            delayDiv.appendChild(button)    
+                        }
+                        newDiv.appendChild(delayDiv)
+                        mainDiv[0].appendChild(newDiv)
+                        event.target.disabled = true
+                    })
+                };
+                reader.onerror = function(ex) {
+                    console.log(ex);
+                };
+                reader.readAsBinaryString(file);
+            };
+        };
+    </script>
+</body>
+</html>
